@@ -1,0 +1,83 @@
+.settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.settings-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}
+
+.settings-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+}
+@media (max-width: 600px) { .settings-row { grid-template-columns: 1fr; } }
+
+.settings-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.color-picker-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.color-picker-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.color-picker-input {
+  width: 48px;
+  height: 40px;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  background: transparent;
+  padding: 2px;
+}
+
+.color-picker-value {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  font-family: monospace;
+}
+
+.settings-store-selector {
+  margin-bottom: var(--space-6);
+}
+
+.store-list {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  margin-top: var(--space-3);
+}
+
+.store-select-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+.store-select-btn:hover { border-color: var(--color-border-hover); }
+.store-select-btn.active {
+  background: var(--color-primary-light);
+  border-color: var(--color-primary);
+  color: var(--color-primary-hover);
+}
