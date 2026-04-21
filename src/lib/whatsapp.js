@@ -8,14 +8,19 @@
  * @param {string} customerPhone - Customer phone
  * @param {string} storeName - Store name
  * @param {string|number} orderNumber - Order reference number
+ * @param {string} [shippingAddress] - Optional shipping address
  * @returns {string} Full wa.me URL
  */
-export function generateWhatsAppLink(phone, items, total, customerName, customerPhone, storeName, orderNumber) {
+export function generateWhatsAppLink(phone, items, total, customerName, customerPhone, storeName, orderNumber, shippingAddress) {
   const cleanPhone = phone.replace(/[^0-9]/g, '');
 
   const itemLines = items
     .map(item => `• ${item.quantity}x ${item.name} - S/${(item.unitPrice * item.quantity).toFixed(2)}`)
     .join('\n');
+
+  const shippingSection = shippingAddress
+    ? `\n📍 *Envío a:* ${shippingAddress}\n`
+    : '';
 
   const message = `🛒 *Nuevo Pedido - ${storeName}*
 
@@ -26,7 +31,7 @@ ${itemLines}
 
 👤 Cliente: ${customerName}
 📱 Tel: ${customerPhone}
-
+${shippingSection}
 📋 Pedido #${orderNumber}`;
 
   const encoded = encodeURIComponent(message);

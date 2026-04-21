@@ -131,6 +131,16 @@ export default function OrdersPage() {
               <p className="text-muted">{selectedOrder.customer_phone}</p>
             </div>
 
+            {(selectedOrder.shipping_departamento || selectedOrder.shipping_provincia || selectedOrder.shipping_distrito || selectedOrder.shipping_direccion) && (
+              <div className="order-detail-section">
+                <h4>📍 Dirección de envío</h4>
+                {selectedOrder.shipping_direccion && <p>{selectedOrder.shipping_direccion}</p>}
+                <p className="text-muted">
+                  {[selectedOrder.shipping_distrito, selectedOrder.shipping_provincia, selectedOrder.shipping_departamento].filter(Boolean).join(' · ')}
+                </p>
+              </div>
+            )}
+
             <div className="order-detail-section">
               <h4>Productos</h4>
               <div className="order-detail-items">

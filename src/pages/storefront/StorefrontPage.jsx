@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router';
-import { ShoppingCart, Plus, Minus, X, MessageCircle, Phone, Trash2, Store, ArrowLeft } from 'lucide-react';
+import { ShoppingCart, Plus, Minus, X, MessageCircle, Phone, Trash2, Store, ArrowLeft, MapPin, User } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { generateWhatsAppLink, formatPrice } from '../../lib/whatsapp';
 import Button from '../../components/ui/Button';
@@ -17,7 +17,7 @@ export default function StorefrontPage() {
   const [cart, setCart] = useState([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
-  const [customer, setCustomer] = useState({ name: '', phone: '' });
+  const [customer, setCustomer] = useState({ name: '', phone: '', departamento: '', provincia: '', distrito: '', direccion: '' });
   const [orderSending, setOrderSending] = useState(false);
 
   useEffect(() => {
@@ -73,13 +73,23 @@ export default function StorefrontPage() {
     setOrderSending(true);
 
     try {
+      const cleanPhone = customer.phone.replace(/[^0-9]/g, '');
+
+      // Build shipping address string
+      const shippingParts = [customer.direccion, customer.distrito, customer.provincia, customer.departamento].filter(Boolean);
+      const shippingAddress = shippingParts.join(', ');
+
       // Create order in DB
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert({
           store_id: store.id,
           customer_name: customer.name,
-          customer_phone: customer.phone,
+          customer_phone: cleanPhone,
+          shipping_departamento: customer.departamento || null,
+          shipping_provincia: customer.provincia || null,
+          shipping_distrito: customer.distrito || null,
+          shipping_direccion: customer.direccion || null,
           total: cartTotal,
           status: 'pending',
         })
@@ -99,21 +109,35 @@ export default function StorefrontPage() {
       }));
       await supabase.from('order_items').insert(items);
 
-      // Try to create/find customer
-      const cleanPhone = customer.phone.replace(/[^0-9]/g, '');
+      // Try to create/find customer — update if exists
       const { data: existingCustomer } = await supabase
         .from('customers')
         .select('id')
         .eq('store_id', store.id)
         .eq('phone', cleanPhone)
-        .single();
+        .maybeSingle();
 
-      if (!existingCustomer) {
-        await supabase.from('customers').insert({
+      if (existingCustomer) {
+        // Update existing customer with latest data
+        await supabase.from('customers').update({
+          name: customer.name,
+          departamento: customer.departamento || null,
+          provincia: customer.provincia || null,
+          distrito: customer.distrito || null,
+          direccion: customer.direccion || null,
+        }).eq('id', existingCustomer.id);
+      } else {
+        // Create new customer
+        const { error: custError } = await supabase.from('customers').insert({
           store_id: store.id,
           name: customer.name,
           phone: cleanPhone,
+          departamento: customer.departamento || null,
+          provincia: customer.provincia || null,
+          distrito: customer.distrito || null,
+          direccion: customer.direccion || null,
         });
+        if (custError) console.warn('Customer creation error:', custError.message);
       }
 
       // Generate WhatsApp link and open
@@ -122,16 +146,17 @@ export default function StorefrontPage() {
         cart.map(item => ({ name: item.name, quantity: item.quantity, unitPrice: item.price })),
         cartTotal,
         customer.name,
-        customer.phone,
+        cleanPhone,
         store.name,
-        order.order_number || order.id.slice(0, 8)
+        order.order_number || order.id.slice(0, 8),
+        shippingAddress
       );
 
       window.open(waLink, '_blank');
       setCart([]);
       setCheckoutOpen(false);
       setCartOpen(false);
-      setCustomer({ name: '', phone: '' });
+      setCustomer({ name: '', phone: '', departamento: '', provincia: '', distrito: '', direccion: '' });
     } catch (err) {
       console.error(err);
       alert('Error al crear el pedido. Intenta de nuevo.');
@@ -276,8 +301,19 @@ export default function StorefrontPage() {
             <h3 className="sf-checkout-title">Tus datos</h3>
             <p className="sf-checkout-desc">Para enviar tu pedido por WhatsApp</p>
             <div className="sf-checkout-form">
-              <Input label="Tu nombre" placeholder="Juan Pérez" value={customer.name} onChange={e => setCustomer(p => ({ ...p, name: e.target.value }))} required />
+              <Input label="Tu nombre" icon={User} placeholder="Juan Pérez" value={customer.name} onChange={e => setCustomer(p => ({ ...p, name: e.target.value }))} required />
               <Input label="Tu WhatsApp" icon={Phone} placeholder="51999888777" value={customer.phone} onChange={e => setCustomer(p => ({ ...p, phone: e.target.value }))} required />
+              
+              <div className="sf-checkout-divider">
+                <span>Dirección de envío</span>
+              </div>
+              
+              <div className="sf-checkout-grid">
+                <Input label="Departamento" icon={MapPin} placeholder="Ej: Lima" value={customer.departamento} onChange={e => setCustomer(p => ({ ...p, departamento: e.target.value }))} />
+                <Input label="Provincia" placeholder="Ej: Lima" value={customer.provincia} onChange={e => setCustomer(p => ({ ...p, provincia: e.target.value }))} />
+              </div>
+              <Input label="Distrito" placeholder="Ej: Miraflores" value={customer.distrito} onChange={e => setCustomer(p => ({ ...p, distrito: e.target.value }))} />
+              <Input label="Dirección de envío" icon={MapPin} placeholder="Av. Ejemplo 123, Dpto 4B" value={customer.direccion} onChange={e => setCustomer(p => ({ ...p, direccion: e.target.value }))} />
             </div>
             <div className="sf-cart-total" style={{ marginTop: 'var(--space-4)' }}>
               <span>Total a pagar</span>

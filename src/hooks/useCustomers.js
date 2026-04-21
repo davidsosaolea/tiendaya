@@ -36,7 +36,7 @@ export function useCustomers(storeId) {
       .select('*')
       .eq('store_id', storeId)
       .eq('phone', phone)
-      .single();
+      .maybeSingle();
     if (existing) return existing;
     return createCustomer({ name, phone });
   };
