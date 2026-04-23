@@ -1,11 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router';
 import { ShoppingCart, Plus, Minus, X, MessageCircle, Phone, Trash2, Store, ArrowLeft, MapPin, User } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { generateWhatsAppLink, formatPrice } from '../../lib/whatsapp';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
+import SearchableSelect from '../../components/ui/SearchableSelect';
 import { PageSpinner } from '../../components/ui/Spinner';
+import PERU_UBIGEO from '../../data/peruUbigeo';
 import './StorefrontPage.css';
 
 export default function StorefrontPage() {
@@ -67,6 +69,23 @@ export default function StorefrontPage() {
 
   const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+
+  // Cascading UBIGEO data
+  const departamentoNames = useMemo(() => PERU_UBIGEO.map(d => d.name), []);
+
+  const provinciaNames = useMemo(() => {
+    if (!customer.departamento) return [];
+    const dep = PERU_UBIGEO.find(d => d.name === customer.departamento);
+    return dep ? dep.provincias.map(p => p.name) : [];
+  }, [customer.departamento]);
+
+  const distritoNames = useMemo(() => {
+    if (!customer.departamento || !customer.provincia) return [];
+    const dep = PERU_UBIGEO.find(d => d.name === customer.departamento);
+    if (!dep) return [];
+    const prov = dep.provincias.find(p => p.name === customer.provincia);
+    return prov ? prov.distritos : [];
+  }, [customer.departamento, customer.provincia]);
 
   const handleCheckout = async () => {
     if (!customer.name || !customer.phone) return;
@@ -308,11 +327,32 @@ export default function StorefrontPage() {
                 <span>Dirección de envío</span>
               </div>
               
+              <SearchableSelect
+                label="Departamento"
+                icon={MapPin}
+                placeholder="Seleccionar departamento"
+                options={departamentoNames}
+                value={customer.departamento}
+                onChange={(val) => setCustomer(p => ({ ...p, departamento: val, provincia: '', distrito: '' }))}
+              />
               <div className="sf-checkout-grid">
-                <Input label="Departamento" icon={MapPin} placeholder="Ej: Lima" value={customer.departamento} onChange={e => setCustomer(p => ({ ...p, departamento: e.target.value }))} />
-                <Input label="Provincia" placeholder="Ej: Lima" value={customer.provincia} onChange={e => setCustomer(p => ({ ...p, provincia: e.target.value }))} />
+                <SearchableSelect
+                  label="Provincia"
+                  placeholder="Seleccionar provincia"
+                  options={provinciaNames}
+                  value={customer.provincia}
+                  onChange={(val) => setCustomer(p => ({ ...p, provincia: val, distrito: '' }))}
+                  disabled={!customer.departamento}
+                />
+                <SearchableSelect
+                  label="Distrito"
+                  placeholder="Seleccionar distrito"
+                  options={distritoNames}
+                  value={customer.distrito}
+                  onChange={(val) => setCustomer(p => ({ ...p, distrito: val }))}
+                  disabled={!customer.provincia}
+                />
               </div>
-              <Input label="Distrito" placeholder="Ej: Miraflores" value={customer.distrito} onChange={e => setCustomer(p => ({ ...p, distrito: e.target.value }))} />
               <Input label="Dirección de envío" icon={MapPin} placeholder="Av. Ejemplo 123, Dpto 4B" value={customer.direccion} onChange={e => setCustomer(p => ({ ...p, direccion: e.target.value }))} />
             </div>
             <div className="sf-cart-total" style={{ marginTop: 'var(--space-4)' }}>
