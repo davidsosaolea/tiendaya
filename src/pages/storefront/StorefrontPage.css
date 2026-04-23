@@ -351,10 +351,13 @@
 /* Checkout */
 .sf-checkout {
   padding: var(--space-5);
+  padding-bottom: var(--space-8);
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
   flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 .sf-checkout-back {
   display: flex;
